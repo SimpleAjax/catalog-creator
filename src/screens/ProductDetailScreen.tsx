@@ -46,7 +46,7 @@ export const ProductDetailScreen: React.FC = () => {
   };
 
   const handleEdit = () => {
-    // TODO: Navigate to edit screen
+    navigation.navigate('AddProduct', {productId});
   };
 
   const handleDelete = () => {

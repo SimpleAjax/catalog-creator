@@ -32,7 +32,11 @@ export const TemplatesScreen: React.FC = () => {
   }, []);
 
   const handleCreatePreset = () => {
-    // TODO: Show modal to create preset
+    navigation.navigate('BulkTag');
+  };
+
+  const handleTemplatePress = (templateId: string) => {
+    navigation.navigate('CatalogBuilder', {template: templateId});
   };
 
   const renderTagPreset = ({item}: {item: TagPreset}) => (
@@ -82,7 +86,8 @@ export const TemplatesScreen: React.FC = () => {
           contentContainerStyle={styles.templatesList}
           renderItem={({item}) => (
             <TouchableOpacity
-              style={[styles.templateCard, {backgroundColor: item.color}]}>
+              style={[styles.templateCard, {backgroundColor: item.color}]}
+              onPress={() => handleTemplatePress(item.id)}>
               <Text style={styles.templateName}>{item.name}</Text>
             </TouchableOpacity>
           )}

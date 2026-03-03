@@ -1,6 +1,10 @@
 // Product Store - Zustand
 import {create} from 'zustand';
 import {immer} from 'zustand/middleware/immer';
+import {shallow} from 'zustand/shallow';
+
+// Re-export shallow for use in components
+export {shallow};
 import {
   getProducts,
   getProductById,
@@ -10,6 +14,7 @@ import {
   getCategories,
   getProductCount,
   searchProducts,
+  bulkUpdateProducts as apiBulkUpdate,
 } from '@/api';
 import {Product, ProductInput} from '@/types';
 
@@ -211,7 +216,6 @@ export const useProductStore = create<ProductState>()(
       });
 
       try {
-        const {bulkUpdateProducts: apiBulkUpdate} = await import('@/api');
         await apiBulkUpdate(ids, updates);
         await get().loadProducts();
       } catch (error) {

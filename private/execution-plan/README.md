@@ -238,11 +238,11 @@ Before marking any feature complete:
 | 4 | [04-search-feature/search.md](./04-search-feature/search.md) | Search + filters | ✅ Done |
 | 5 | [05-templates-feature/templates.md](./05-templates-feature/templates.md) | Templates + presets | ✅ Done |
 | 6 | [06-export-share-feature/export-share.md](./06-export-share-feature/export-share.md) | PDF, image, WhatsApp | ✅ Done |
-| **7** | [**07-ui-polish-spacing/ui-polish-spacing.md**](./07-ui-polish-spacing/ui-polish-spacing.md) | **Safe areas, spacing fixes** | 🔴 Next |
-| **8** | [**08-testing-quality/testing-quality.md**](./08-testing-quality/testing-quality.md) | **E2E, unit, integration tests** | ⚪ Pending |
-| **9** | [**09-performance-optimization/performance-optimization.md**](./09-performance-optimization/performance-optimization.md) | **Images, lists, memory** | ⚪ Pending |
-| **10** | [**10-export-share-completion/export-share-completion.md**](./10-export-share-completion/export-share-completion.md) | **PDF, WhatsApp sharing** | ⚪ Pending |
-| **11** | [**11-edge-cases-errors/edge-cases-errors.md**](./11-edge-cases-errors/edge-cases-errors.md) | **Error handling, empty states** | ⚪ Pending |
+| **7** | [**07-ui-polish-spacing/ui-polish-spacing.md**](./07-ui-polish-spacing/ui-polish-spacing.md) | **Safe areas, spacing fixes** | ✅ Done |
+| **8** | [**08-testing-quality/testing-quality.md**](./08-testing-quality/testing-quality.md) | **E2E, unit, integration tests** | ✅ Done |
+| **9** | [**09-performance-optimization/performance-optimization.md**](./09-performance-optimization/performance-optimization.md) | **Images, lists, memory** | ✅ Done |
+| **10** | [**10-export-share-completion/export-share-completion.md**](./10-export-share-completion/export-share-completion.md) | **PDF, WhatsApp sharing** | ✅ Done |
+| **11** | [**11-edge-cases-errors/edge-cases-errors.md**](./11-edge-cases-errors/edge-cases-errors.md) | **Error handling, empty states** | 🔴 Next |
 | **12** | [**12-polish-final/12-polish-final.md**](./12-polish-final/12-polish-final.md) | **Release preparation** | ⚪ Pending |
 
-*Phases 0-6 are complete. Start with Phase 7 for the next sprint.*
+*Phases 0-10 are complete. Start with Phase 11 for the next sprint.*

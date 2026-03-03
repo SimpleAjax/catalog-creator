@@ -1,6 +1,10 @@
 // App Store - Navigation & UI State - Zustand
 import {create} from 'zustand';
 import {immer} from 'zustand/middleware/immer';
+import {shallow} from 'zustand/shallow';
+
+// Re-export shallow for use in components
+export {shallow};
 import {Screen} from '@/navigation/types';
 
 interface AppState {
@@ -20,6 +24,9 @@ interface AppState {
   selectedProductIds: string[];
   isSelectionMode: boolean;
 
+  // Store Profile
+  storeName: string;
+
   // Actions
   setScreen: (screen: Screen) => void;
   setLoading: (loading: boolean) => void;
@@ -31,6 +38,7 @@ interface AppState {
   toggleProductSelection: (id: string) => void;
   selectAll: (ids: string[]) => void;
   clearSelection: () => void;
+  setStoreName: (name: string) => void;
 }
 
 const MAX_RECENT_SEARCHES = 10;
@@ -45,6 +53,7 @@ export const useAppStore = create<AppState>()(
     recentSearches: [],
     selectedProductIds: [],
     isSelectionMode: false,
+    storeName: '',
 
     setScreen: (screen: Screen) => {
       set(state => {
@@ -124,6 +133,12 @@ export const useAppStore = create<AppState>()(
       set(state => {
         state.selectedProductIds = [];
         state.isSelectionMode = false;
+      });
+    },
+
+    setStoreName: (name: string) => {
+      set(state => {
+        state.storeName = name;
       });
     },
   })),

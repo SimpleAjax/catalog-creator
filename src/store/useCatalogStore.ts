@@ -1,6 +1,10 @@
 // Catalog Store - Zustand
 import {create} from 'zustand';
 import {immer} from 'zustand/middleware/immer';
+import {shallow} from 'zustand/shallow';
+
+// Re-export shallow for use in components
+export {shallow};
 import {
   getCatalogs,
   getCatalogById,

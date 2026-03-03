@@ -11,7 +11,7 @@ import {
 } from 'react-native';
 import {useNavigation} from '@react-navigation/native';
 import {NativeStackNavigationProp} from '@react-navigation/native-stack';
-import {Plus, MoreVertical} from 'lucide-react-native';
+import {Plus} from 'lucide-react-native';
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
 
 import {RootStackParamList} from '@/navigation';
@@ -69,9 +69,6 @@ export const CatalogsScreen: React.FC = () => {
           products
         </Text>
       </View>
-      <TouchableOpacity style={styles.moreButton}>
-        <MoreVertical size={20} color={semantic.textSecondary} />
-      </TouchableOpacity>
     </TouchableOpacity>
   );
 
@@ -170,9 +167,7 @@ const styles = StyleSheet.create({
     color: semantic.textSecondary,
     marginTop: 2,
   },
-  moreButton: {
-    padding: spacing.xs,
-  },
+
   emptyState: {
     flex: 1,
     justifyContent: 'center',

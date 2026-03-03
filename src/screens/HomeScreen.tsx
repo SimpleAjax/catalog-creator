@@ -9,7 +9,7 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import {useNavigation} from '@react-navigation/native';
-import {Plus, Search, Package, BookOpen, ChevronRight} from 'lucide-react-native';
+import {Plus, Search, Package, BookOpen, ChevronRight, FolderPlus} from 'lucide-react-native';
 
 import {useProductStore, useCatalogStore} from '@/store';
 import {colors, semantic, spacing, textStyles, typography} from '@/theme';
@@ -30,6 +30,10 @@ export const HomeScreen: React.FC = () => {
 
   const handleAddProduct = () => {
     navigation.navigate('AddProduct');
+  };
+
+  const handleCreateCatalog = () => {
+    navigation.navigate('CatalogBuilder', {});
   };
 
   const handleSearch = () => {
@@ -129,6 +133,8 @@ export const HomeScreen: React.FC = () => {
       {/* Quick Actions */}
       <View style={styles.section}>
         <Text style={textStyles.sectionHeader}>Quick Actions</Text>
+        
+        {/* Add Product */}
         <TouchableOpacity
           style={styles.actionCard}
           onPress={handleAddProduct}>
@@ -139,6 +145,22 @@ export const HomeScreen: React.FC = () => {
             <Text style={styles.actionTitle}>Add Products</Text>
             <Text style={styles.actionSubtitle}>
               Import from gallery or camera
+            </Text>
+          </View>
+          <ChevronRight size={20} color={semantic.textSecondary} />
+        </TouchableOpacity>
+
+        {/* Create Catalog */}
+        <TouchableOpacity
+          style={[styles.actionCard, styles.actionCardMargin]}
+          onPress={handleCreateCatalog}>
+          <View style={[styles.actionIcon, {backgroundColor: semantic.secondary}]}>
+            <FolderPlus size={24} color={semantic.textSecondary} />
+          </View>
+          <View style={styles.actionContent}>
+            <Text style={styles.actionTitle}>Create Catalog</Text>
+            <Text style={styles.actionSubtitle}>
+              Build a new product catalog
             </Text>
           </View>
           <ChevronRight size={20} color={semantic.textSecondary} />
@@ -270,6 +292,9 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.08,
     shadowRadius: 3,
     elevation: 2,
+  },
+  actionCardMargin: {
+    marginTop: spacing.md,
   },
   actionIcon: {
     width: 48,

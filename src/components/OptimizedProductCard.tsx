@@ -1,9 +1,8 @@
-// Product card component for grid display
-import React from 'react';
+// Optimized ProductCard with React.memo and performance improvements
+import React, {memo, useCallback} from 'react';
 import {
   View,
   Text,
-  Image,
   StyleSheet,
   TouchableOpacity,
   ViewStyle,
@@ -11,17 +10,19 @@ import {
 import {Check} from 'lucide-react-native';
 import {Product} from '@/types';
 import {colors, semantic, typography} from '@/theme';
+import {LazyImage} from './LazyImage';
+import {formatPrice} from '@/utils/formatting';
 
-interface ProductCardProps {
+interface OptimizedProductCardProps {
   product: Product;
-  onPress?: () => void;
-  onLongPress?: () => void;
+  onPress?: (product: Product) => void;
+  onLongPress?: (product: Product) => void;
   selected?: boolean;
   style?: ViewStyle;
   testID?: string;
 }
 
-export const ProductCard: React.FC<ProductCardProps> = ({
+export const OptimizedProductCard: React.FC<OptimizedProductCardProps> = memo(({
   product,
   onPress,
   onLongPress,
@@ -29,27 +30,34 @@ export const ProductCard: React.FC<ProductCardProps> = ({
   style,
   testID,
 }) => {
-  const formatPrice = (price: number | null) => {
-    if (price === null) return '';
-    return `₹${price}`;
-  };
+  const handlePress = useCallback(() => {
+    onPress?.(product);
+  }, [onPress, product]);
+
+  const handleLongPress = useCallback(() => {
+    onLongPress?.(product);
+  }, [onLongPress, product]);
 
   return (
     <TouchableOpacity
       style={[styles.container, selected && styles.selected, style]}
-      onPress={onPress}
-      onLongPress={onLongPress}
+      onPress={handlePress}
+      onLongPress={handleLongPress}
       activeOpacity={0.8}
       testID={testID}
       accessibilityLabel={product.name}>
       <View style={styles.imageContainer}>
-        <Image source={{uri: product.imageUri}} style={styles.image} />
+        <LazyImage
+          uri={product.imageUri}
+          style={styles.image}
+          resizeMode="cover"
+        />
         {selected && (
           <View style={styles.checkmark} testID="checkmark">
             <Check size={16} color={semantic.card} strokeWidth={3} />
           </View>
         )}
-        {product.price !== null && (
+        {product.price !== null && product.price !== undefined && (
           <View style={styles.priceOverlay}>
             <Text style={styles.priceText}>{formatPrice(product.price)}</Text>
           </View>
@@ -60,7 +68,14 @@ export const ProductCard: React.FC<ProductCardProps> = ({
       </Text>
     </TouchableOpacity>
   );
-};
+}, (prevProps, nextProps) => {
+  // Custom comparison for performance - only re-render if these change
+  return (
+    prevProps.product.id === nextProps.product.id &&
+    prevProps.product.price === nextProps.product.price &&
+    prevProps.selected === nextProps.selected
+  );
+});
 
 const styles = StyleSheet.create({
   container: {
@@ -87,7 +102,6 @@ const styles = StyleSheet.create({
   image: {
     width: '100%',
     height: '100%',
-    resizeMode: 'cover',
   },
   checkmark: {
     position: 'absolute',
@@ -121,4 +135,6 @@ const styles = StyleSheet.create({
   },
 });
 
-export default ProductCard;
+OptimizedProductCard.displayName = 'OptimizedProductCard';
+
+export default OptimizedProductCard;

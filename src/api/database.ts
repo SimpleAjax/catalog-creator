@@ -139,13 +139,23 @@ const createSchema = () => {
   `);
 
   // Create indexes for better performance
+  // Product indexes
   db.execSync('CREATE INDEX IF NOT EXISTS idx_products_category ON products(category);');
-  db.execSync('CREATE INDEX IF NOT EXISTS idx_products_date ON products(dateAdded);');
+  db.execSync('CREATE INDEX IF NOT EXISTS idx_products_date ON products(dateAdded DESC);');
   db.execSync('CREATE INDEX IF NOT EXISTS idx_products_archived ON products(archived);');
+  db.execSync('CREATE INDEX IF NOT EXISTS idx_products_name ON products(name COLLATE NOCASE);');
+  db.execSync('CREATE INDEX IF NOT EXISTS idx_products_price ON products(price);');
+  
+  // Product tags indexes
   db.execSync('CREATE INDEX IF NOT EXISTS idx_product_tags_product ON product_tags(productId);');
   db.execSync('CREATE INDEX IF NOT EXISTS idx_product_tags_tag ON product_tags(tagId);');
+  
+  // Catalog indexes
+  db.execSync('CREATE INDEX IF NOT EXISTS idx_catalogs_status ON catalogs(status);');
+  db.execSync('CREATE INDEX IF NOT EXISTS idx_catalogs_date ON catalogs(dateCreated DESC);');
   db.execSync('CREATE INDEX IF NOT EXISTS idx_catalog_products_catalog ON catalog_products(catalogId);');
   db.execSync('CREATE INDEX IF NOT EXISTS idx_catalog_products_product ON catalog_products(productId);');
+  db.execSync('CREATE INDEX IF NOT EXISTS idx_catalog_products_order ON catalog_products(catalogId, sortOrder);');
 
   console.log('Database schema created successfully');
 };

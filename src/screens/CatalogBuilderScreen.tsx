@@ -36,7 +36,7 @@ export const CatalogBuilderScreen: React.FC = () => {
   const navigation = useNavigation<NavigationProp>();
   const route = useRoute<RouteProps>();
   const insets = useSafeAreaInsets();
-  const {catalogId} = route.params || {};
+  const {catalogId, template} = route.params || {};
   const {currentCatalog, loadCatalog, createCatalog, updateCatalog} =
     useCatalogStore();
   const {products} = useProductStore();
@@ -50,7 +50,11 @@ export const CatalogBuilderScreen: React.FC = () => {
     if (catalogId) {
       loadCatalog(catalogId);
     }
-  }, [catalogId]);
+    // If template is provided from route params, use it
+    if (template && templates.some(t => t.id === template)) {
+      setSelectedTemplate(template as TemplateType);
+    }
+  }, [catalogId, template]);
 
   useEffect(() => {
     if (currentCatalog && catalogId) {
@@ -193,7 +197,7 @@ export const CatalogBuilderScreen: React.FC = () => {
           </View>
         </View>
       </ScrollView>
-    </View>
+    </SafeAreaView>
   );
 };
 

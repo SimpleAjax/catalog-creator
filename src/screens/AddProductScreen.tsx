@@ -1,5 +1,5 @@
-// Add Product Screen
-import React, {useState} from 'react';
+// Add/Edit Product Screen
+import React, {useState, useEffect} from 'react';
 import {
   View,
   Text,
@@ -11,7 +11,7 @@ import {
   Alert,
   SafeAreaView,
 } from 'react-native';
-import {useNavigation} from '@react-navigation/native';
+import {useNavigation, useRoute, RouteProp} from '@react-navigation/native';
 import {NativeStackNavigationProp} from '@react-navigation/native-stack';
 import {Camera, Image as ImageIcon, X} from 'lucide-react-native';
 import * as ImagePicker from 'expo-image-picker';
@@ -23,11 +23,15 @@ import {semantic, spacing, textStyles, typography} from '@/theme';
 import {Header} from '@/components/Header';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
+type RouteProps = RouteProp<RootStackParamList, 'AddProduct'>;
 
 export const AddProductScreen: React.FC = () => {
   const navigation = useNavigation<NavigationProp>();
+  const route = useRoute<RouteProps>();
   const insets = useSafeAreaInsets();
-  const {addProduct} = useProductStore();
+  const {addProduct, loadProduct, updateProduct} = useProductStore();
+  const {productId} = route.params || {};
+  const isEditMode = !!productId;
 
   const [name, setName] = useState('');
   const [price, setPrice] = useState('');
@@ -36,6 +40,33 @@ export const AddProductScreen: React.FC = () => {
   const [category, setCategory] = useState('');
   const [imageUri, setImageUri] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [isLoadingProduct, setIsLoadingProduct] = useState(isEditMode);
+
+  // Load product data if in edit mode
+  useEffect(() => {
+    if (isEditMode && productId) {
+      loadProductForEdit();
+    }
+  }, [productId]);
+
+  const loadProductForEdit = async () => {
+    setIsLoadingProduct(true);
+    try {
+      const product = await loadProduct(productId);
+      if (product) {
+        setName(product.name);
+        setPrice(product.price?.toString() || '');
+        setMrp(product.mrp?.toString() || '');
+        setDescription(product.description);
+        setCategory(product.category);
+        setImageUri(product.imageUri);
+      }
+    } catch (error) {
+      Alert.alert('Error', 'Failed to load product');
+    } finally {
+      setIsLoadingProduct(false);
+    }
+  };
 
   const pickImage = async () => {
     const result = await ImagePicker.launchImageLibraryAsync({
@@ -62,21 +93,34 @@ export const AddProductScreen: React.FC = () => {
 
     setIsLoading(true);
     try {
-      await addProduct({
-        name: name.trim(),
-        price: price ? parseInt(price, 10) : null,
-        mrp: mrp ? parseInt(mrp, 10) : null,
-        description: description.trim(),
-        imageUri,
-        category: category.trim(),
-        tags: [],
-        source: 'Gallery',
-        stockStatus: 'in-stock',
-        archived: false,
-      });
+      if (isEditMode && productId) {
+        // Update existing product
+        await updateProduct(productId, {
+          name: name.trim(),
+          price: price ? parseInt(price, 10) : null,
+          mrp: mrp ? parseInt(mrp, 10) : null,
+          description: description.trim(),
+          imageUri,
+          category: category.trim(),
+        });
+      } else {
+        // Create new product
+        await addProduct({
+          name: name.trim(),
+          price: price ? parseInt(price, 10) : null,
+          mrp: mrp ? parseInt(mrp, 10) : null,
+          description: description.trim(),
+          imageUri,
+          category: category.trim(),
+          tags: [],
+          source: 'Gallery',
+          stockStatus: 'in-stock',
+          archived: false,
+        });
+      }
       navigation.goBack();
     } catch (error) {
-      Alert.alert('Error', 'Failed to save product');
+      Alert.alert('Error', `Failed to ${isEditMode ? 'update' : 'save'} product`);
     } finally {
       setIsLoading(false);
     }
@@ -85,15 +129,21 @@ export const AddProductScreen: React.FC = () => {
   return (
     <SafeAreaView style={styles.container}>
       <Header
-        title="Add Product"
+        title={isEditMode ? 'Edit Product' : 'Add Product'}
         rightAction={
-          <TouchableOpacity onPress={handleSave} disabled={isLoading}>
-            <Text style={[styles.saveButton, isLoading && styles.saveButtonDisabled]}>
+          <TouchableOpacity onPress={handleSave} disabled={isLoading || isLoadingProduct}>
+            <Text style={[styles.saveButton, (isLoading || isLoadingProduct) && styles.saveButtonDisabled]}>
               Save
             </Text>
           </TouchableOpacity>
         }
       />
+      
+      {isLoadingProduct ? (
+        <View style={styles.center}>
+          <Text>Loading product...</Text>
+        </View>
+      ) : (
 
       <ScrollView 
         style={styles.content} 
@@ -181,6 +231,7 @@ export const AddProductScreen: React.FC = () => {
           </View>
         </View>
       </ScrollView>
+      )}
     </SafeAreaView>
   );
 };
@@ -189,6 +240,11 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: semantic.background,
+  },
+  center: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   saveButton: {
     fontSize: typography.body.fontSize,

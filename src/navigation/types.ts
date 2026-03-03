@@ -8,9 +8,9 @@ export type RootTabParamList = {
 
 export type RootStackParamList = {
   MainTabs: undefined;
-  AddProduct: undefined;
+  AddProduct: {productId?: string};
   ProductDetail: {productId: string};
-  CatalogBuilder: {catalogId?: string};
+  CatalogBuilder: {catalogId?: string; template?: string};
   CatalogPreview: {catalogId: string};
   BulkTag: {productIds: string[]};
   Search: {initialQuery?: string};
