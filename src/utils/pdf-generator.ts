@@ -128,10 +128,12 @@ const generateCatalogHTMLWithTemplate = (options: PDFOptions): string => {
   const {catalog, products, storeName, includePrices, includeStoreName = true} = options;
   
   // Get template configuration
-  const template = getTemplate(catalog.template || 'minimal');
+  const template = getTemplate(catalog.template || 'linesheet');
   const colors = template.colors;
+  const isLineSheet = catalog.template === 'linesheet';
   
-  const productsPerPage = 4; // 2x2 grid - consistent across templates
+  // Line sheet template uses 3-column grid, others use 2x2
+  const productsPerPage = isLineSheet ? 9 : 4;
   const totalPages = Math.ceil(products.length / productsPerPage);
 
   // Build all pages
@@ -141,7 +143,7 @@ const generateCatalogHTMLWithTemplate = (options: PDFOptions): string => {
     const pageProducts = products.slice(pageNum * productsPerPage, (pageNum + 1) * productsPerPage);
     
     // Build product grid for this page
-    let productGridHTML = '<div class="products-grid">';
+    let productGridHTML = '';
     
     for (const product of pageProducts) {
       const hasDiscount = product.mrp && product.mrp > (product.price || 0);
@@ -149,54 +151,91 @@ const generateCatalogHTMLWithTemplate = (options: PDFOptions): string => {
         ? Math.round(((product.mrp! - product.price) / product.mrp!) * 100)
         : 0;
       
-      productGridHTML += `
-        <div class="product-card" style="
-          background: ${colors.cardBg};
-          border-radius: ${template.style.borderRadius}px;
-          border: ${template.layout.cardStyle === 'outlined' ? `1px solid ${colors.border}` : 'none'};
-        ">
-          <div class="product-image-container" style="
-            border-radius: ${template.style.imageStyle === 'rounded' 
-              ? `${template.style.borderRadius - 4}px ${template.style.borderRadius - 4}px 0 0` 
-              : '0'};
-          ">
-            <img src="${product.imageUri}" class="product-image" onerror="this.style.display='none'" />
-          </div>
-          <div class="product-info" style="
+      if (isLineSheet) {
+        // Line Sheet style product card - compact, elegant
+        productGridHTML += `
+          <div class="product-card linesheet" style="
             background: ${colors.cardBg};
-            border-radius: 0 0 ${template.style.borderRadius}px ${template.style.borderRadius}px;
+            border-radius: ${template.style.borderRadius}px;
+            border: 1px solid ${colors.border};
           ">
-            <p class="product-name" style="color: ${colors.text};">${escapeHtml(product.name)}</p>
-            ${includePrices ? `
-              <div class="price-container">
-                ${product.price ? `
-                  <p class="product-price" style="color: ${colors.price};">
-                    ₹${product.price.toLocaleString('en-IN')}
-                  </p>
-                ` : ''}
-                ${hasDiscount ? `
-                  <div class="discount-row">
-                    <p class="product-mrp" style="color: ${colors.textMuted};">₹${product.mrp!.toLocaleString('en-IN')}</p>
-                    <span class="discount-badge" style="background: ${colors.accent}30; color: ${colors.primary};">
-                      -${discountPercent}%
-                    </span>
-                  </div>
-                ` : ''}
-              </div>
-            ` : ''}
+            <div class="product-image-container linesheet">
+              <img src="${product.imageUri}" class="product-image linesheet" onerror="this.style.display='none'" />
+            </div>
+            <div class="product-info linesheet">
+              <p class="product-name linesheet" style="color: ${colors.text};">${escapeHtml(product.name)}</p>
+              ${product.description ? `<p class="product-desc linesheet" style="color: ${colors.textMuted};">${escapeHtml(product.description)}</p>` : ''}
+              ${includePrices && product.price ? `
+                <p class="product-price linesheet" style="color: ${colors.price};">
+                  ₹${product.price.toLocaleString('en-IN')}
+                </p>
+              ` : ''}
+            </div>
           </div>
-        </div>
-      `;
+        `;
+      } else {
+        // Standard product card
+        productGridHTML += `
+          <div class="product-card" style="
+            background: ${colors.cardBg};
+            border-radius: ${template.style.borderRadius}px;
+            border: ${template.layout.cardStyle === 'outlined' ? `1px solid ${colors.border}` : 'none'};
+          ">
+            <div class="product-image-container" style="
+              border-radius: ${template.style.imageStyle === 'rounded' 
+                ? `${template.style.borderRadius - 4}px ${template.style.borderRadius - 4}px 0 0` 
+                : '0'};
+            ">
+              <img src="${product.imageUri}" class="product-image" onerror="this.style.display='none'" />
+            </div>
+            <div class="product-info" style="
+              background: ${colors.cardBg};
+              border-radius: 0 0 ${template.style.borderRadius}px ${template.style.borderRadius}px;
+            ">
+              <p class="product-name" style="color: ${colors.text};">${escapeHtml(product.name)}</p>
+              ${includePrices ? `
+                <div class="price-container">
+                  ${product.price ? `
+                    <p class="product-price" style="color: ${colors.price};">
+                      ₹${product.price.toLocaleString('en-IN')}
+                    </p>
+                  ` : ''}
+                  ${hasDiscount ? `
+                    <div class="discount-row">
+                      <p class="product-mrp" style="color: ${colors.textMuted};">₹${product.mrp!.toLocaleString('en-IN')}</p>
+                      <span class="discount-badge" style="background: ${colors.accent}30; color: ${colors.primary};">
+                        -${discountPercent}%
+                      </span>
+                    </div>
+                  ` : ''}
+                </div>
+              ` : ''}
+            </div>
+          </div>
+        `;
+      }
     }
     
-    productGridHTML += '</div>';
+    // Wrap in grid container with appropriate class
+    const gridClass = isLineSheet ? 'linesheet' : 'standard';
+    productGridHTML = `<div class="products-grid ${gridClass}">${productGridHTML}</div>`;
     
     // Page header based on template header style
     let headerHTML = '';
     
     if (pageNum === 0) {
-      // First page header - COMPACT version to fit all products
-      if (template.layout.headerStyle === 'gradient' && colors.gradient) {
+      // First page header
+      if (isLineSheet) {
+        // Line Sheet header - clean, centered "LINE SHEET" title
+        headerHTML = `
+          <div class="header-linesheet">
+            ${includeStoreName && storeName ? `<p class="store-name-linesheet">${escapeHtml(storeName)}</p>` : ''}
+            <h1 class="catalog-title-linesheet">LINE SHEET</h1>
+            <p class="catalog-subtitle-linesheet">${escapeHtml(catalog.name)}</p>
+            <p class="catalog-meta-linesheet">${products.length} Products</p>
+          </div>
+        `;
+      } else if (template.layout.headerStyle === 'gradient' && colors.gradient) {
         headerHTML = `
           <div class="header" style="
             background: linear-gradient(135deg, ${colors.gradient[0]} 0%, ${colors.gradient[1]} 100%);
@@ -243,7 +282,7 @@ const generateCatalogHTMLWithTemplate = (options: PDFOptions): string => {
     }
     
     pagesHTML += `
-      <div class="page" style="background: ${colors.background};">
+      <div class="page ${isLineSheet ? 'linesheet-page' : ''}" style="background: ${colors.background};">
         ${headerHTML}
         ${productGridHTML}
         ${pageNum === totalPages - 1 ? `
@@ -256,7 +295,7 @@ const generateCatalogHTMLWithTemplate = (options: PDFOptions): string => {
   }
 
   // Generate template-specific CSS
-  const templateCSS = generateTemplateCSS(template);
+  const templateCSS = generateTemplateCSS(template, isLineSheet);
 
   return `
     <!DOCTYPE html>
@@ -300,9 +339,18 @@ const generateCatalogHTMLWithTemplate = (options: PDFOptions): string => {
         
         .products-grid {
           display: grid;
-          grid-template-columns: 1fr 1fr;
           gap: 15px;
-          height: calc(297mm - 30mm - 80mm); /* Page height - padding - header space */
+        }
+        
+        .products-grid.standard {
+          grid-template-columns: 1fr 1fr;
+          height: calc(297mm - 30mm - 80mm);
+        }
+        
+        .products-grid.linesheet {
+          grid-template-columns: repeat(3, 1fr);
+          gap: 12px;
+          height: calc(297mm - 30mm - 60mm); /* More space for products */
         }
         
         .product-card {
@@ -315,10 +363,20 @@ const generateCatalogHTMLWithTemplate = (options: PDFOptions): string => {
           height: 100%;
         }
         
+        .product-card.linesheet {
+          box-shadow: none;
+        }
+        
         .product-image-container {
-          height: calc(100% - 80px); /* Card height minus info section */
+          height: calc(100% - 80px);
           overflow: hidden;
           background-color: ${colors.secondary};
+        }
+        
+        .product-image-container.linesheet {
+          height: 140px;
+          aspect-ratio: 1;
+          margin: 0 auto;
         }
         
         .product-image {
@@ -327,9 +385,19 @@ const generateCatalogHTMLWithTemplate = (options: PDFOptions): string => {
           object-fit: cover;
         }
         
+        .product-image.linesheet {
+          object-fit: contain;
+          padding: 8px;
+        }
+        
         .product-info {
           padding: 16px;
           flex-shrink: 0;
+        }
+        
+        .product-info.linesheet {
+          padding: 12px;
+          text-align: center;
         }
         
         .product-name {
@@ -340,6 +408,30 @@ const generateCatalogHTMLWithTemplate = (options: PDFOptions): string => {
           white-space: nowrap;
           overflow: hidden;
           text-overflow: ellipsis;
+        }
+        
+        .product-name.linesheet {
+          font-size: 13px;
+          font-weight: 700;
+          text-transform: uppercase;
+          letter-spacing: 0.5px;
+          margin-bottom: 4px;
+        }
+        
+        .product-desc.linesheet {
+          font-size: 10px;
+          margin-bottom: 6px;
+          line-height: 1.4;
+          display: -webkit-box;
+          -webkit-line-clamp: 2;
+          -webkit-box-orient: vertical;
+          overflow: hidden;
+        }
+        
+        .product-price.linesheet {
+          font-size: 14px;
+          font-weight: 600;
+          margin-top: 4px;
         }
         
         .price-container {
@@ -395,11 +487,75 @@ const generateCatalogHTMLWithTemplate = (options: PDFOptions): string => {
 /**
  * Generate template-specific CSS based on template configuration
  */
-const generateTemplateCSS = (template: ReturnType<typeof getTemplate>): string => {
+const generateTemplateCSS = (template: ReturnType<typeof getTemplate>, isLineSheet: boolean): string => {
   const colors = template.colors;
   
-  // Header styles
-  const headerStyles = `
+  if (isLineSheet) {
+    // Line Sheet specific styles
+    return `
+      .header-linesheet {
+        text-align: center;
+        padding: 20px 0 30px 0;
+        margin: -15mm -15mm 20px -15mm;
+        background: ${colors.background};
+        border-bottom: 1px solid ${colors.border};
+      }
+      
+      .store-name-linesheet {
+        font-size: 11px;
+        font-weight: 500;
+        color: ${colors.textMuted};
+        text-transform: uppercase;
+        letter-spacing: 2px;
+        margin-bottom: 8px;
+      }
+      
+      .catalog-title-linesheet {
+        font-size: 32px;
+        font-weight: 300;
+        color: ${colors.text};
+        letter-spacing: 4px;
+        margin: 0;
+      }
+      
+      .catalog-subtitle-linesheet {
+        font-size: 14px;
+        color: ${colors.textMuted};
+        margin-top: 8px;
+        font-weight: 400;
+      }
+      
+      .catalog-meta-linesheet {
+        font-size: 12px;
+        color: ${colors.textMuted};
+        margin-top: 4px;
+      }
+      
+      .header-simple {
+        padding: 12px 20px;
+        text-align: center;
+        margin: -15mm -15mm 15px -15mm;
+        height: 50mm;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+      }
+      
+      .catalog-title-simple {
+        font-size: 20px;
+        font-weight: 600;
+        margin: 0;
+      }
+      
+      .page-number {
+        font-size: 12px;
+        margin-top: 4px;
+      }
+    `;
+  }
+  
+  // Standard header styles
+  return `
     .header {
       padding: 16px 20px;
       text-align: center;
@@ -482,8 +638,6 @@ const generateTemplateCSS = (template: ReturnType<typeof getTemplate>): string =
       margin-top: 4px;
     }
   `;
-  
-  return headerStyles;
 };
 
 /**

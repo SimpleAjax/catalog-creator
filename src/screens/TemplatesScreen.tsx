@@ -64,6 +64,25 @@ export const TemplatesScreen: React.FC = () => {
     }
   };
 
+  const getCategoryLabel = (category: TemplateConfig['category']) => {
+    switch (category) {
+      case 'minimal':
+        return 'Minimal';
+      case 'elegant':
+        return 'Elegant';
+      case 'warm':
+        return 'Warm';
+      case 'playful':
+        return 'Playful';
+      case 'dark':
+        return 'Dark';
+      case 'vibrant':
+        return 'Vibrant';
+      default:
+        return 'Elegant';
+    }
+  };
+
   const renderTemplateCard = ({item}: {item: TemplateConfig}) => (
     <TouchableOpacity
       style={[
@@ -137,6 +156,11 @@ export const TemplatesScreen: React.FC = () => {
           numberOfLines={1}>
           {item.description}
         </Text>
+        <View style={[styles.categoryBadge, {backgroundColor: item.colors.secondary}]}>
+          <Text style={[styles.categoryText, {color: item.colors.textMuted}]}>
+            {getCategoryLabel(item.category)}
+          </Text>
+        </View>
       </View>
     </TouchableOpacity>
   );
@@ -181,7 +205,7 @@ export const TemplatesScreen: React.FC = () => {
           <View style={styles.headerText}>
             <Text style={styles.headerTitle}>Choose Your Style</Text>
             <Text style={styles.headerSubtitle}>
-              {catalogTemplates.length} beautiful templates to showcase your products
+              Elegant line sheet template for showcasing jewelry and accessories
             </Text>
           </View>
         </View>
@@ -335,6 +359,19 @@ const styles = StyleSheet.create({
   templateDescription: {
     fontSize: 11,
     marginTop: 2,
+  },
+  categoryBadge: {
+    alignSelf: 'flex-start',
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 4,
+    marginTop: 8,
+  },
+  categoryText: {
+    fontSize: 10,
+    fontWeight: '500',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
   },
   presetsHeader: {
     flexDirection: 'row',

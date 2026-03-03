@@ -127,23 +127,23 @@ export const seedDatabase = async (): Promise<void> => {
     productIds.push(id);
   }
 
-  // Sample catalogs with new beautiful templates
+  // Sample catalogs with Line Sheet template
   const sampleCatalogs: CatalogInput[] = [
     {
       name: 'Wedding Collection',
-      template: 'terracotta',
+      template: 'linesheet',
       productIds: productIds.filter((_, i) => [0, 2, 3].includes(i)),
-      primaryColor: '#C65D3B',
-      secondaryColor: '#FDF1E8',
+      primaryColor: '#1A1A1A',
+      secondaryColor: '#F5F0EB',
       storeName: 'My Store',
       status: 'published',
     },
     {
       name: 'Daily Essentials',
-      template: 'botanical',
+      template: 'linesheet',
       productIds: productIds.filter((_, i) => [1, 4, 7].includes(i)),
-      primaryColor: '#2D5A3D',
-      secondaryColor: '#E8F5E9',
+      primaryColor: '#1A1A1A',
+      secondaryColor: '#F5F0EB',
       storeName: 'My Store',
       status: 'published',
     },

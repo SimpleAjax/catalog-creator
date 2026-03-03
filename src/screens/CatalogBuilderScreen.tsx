@@ -39,7 +39,7 @@ export const CatalogBuilderScreen: React.FC = () => {
   const {products} = useProductStore();
 
   const [name, setName] = useState('');
-  const [selectedTemplate, setSelectedTemplate] = useState<TemplateType>('minimal');
+  const [selectedTemplate, setSelectedTemplate] = useState<TemplateType>('linesheet');
   const [selectedProducts, setSelectedProducts] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(false);
 

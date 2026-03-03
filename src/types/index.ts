@@ -3,16 +3,8 @@
 // Stock status for products
 export type StockStatus = 'in-stock' | 'limited' | 'out-of-stock';
 
-// Template types for catalogs
-export type TemplateType = 
-  | 'minimal' 
-  | 'botanical' 
-  | 'midnight' 
-  | 'pastel' 
-  | 'terracotta' 
-  | 'indigo'
-  | 'golden'
-  | 'nordic';
+// Template types for catalogs - currently only Line Sheet
+export type TemplateType = 'linesheet';
 
 // Catalog status
 export type CatalogStatus = 'draft' | 'published' | 'archived';

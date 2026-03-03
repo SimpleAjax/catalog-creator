@@ -40,10 +40,10 @@ interface CatalogState {
 const defaultCatalog: Catalog = {
   id: '',
   name: 'New Catalog',
-  template: 'minimal',
+  template: 'linesheet',
   productIds: [],
-  primaryColor: '#374151',
-  secondaryColor: '#F3F4F6',
+  primaryColor: '#1A1A1A',
+  secondaryColor: '#F5F0EB',
   storeName: '',
   status: 'draft',
   dateCreated: new Date().toISOString(),
