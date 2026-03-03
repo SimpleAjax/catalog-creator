@@ -1,5 +1,6 @@
 // Theme color tests
-import {colors, semantic, templateColors} from '@/theme/colors';
+import {colors, semantic} from '@/theme/colors';
+import {catalogTemplates, getTemplate, getTemplateColors} from '@/theme/templates';
 
 describe('colors', () => {
   it('should have primary color scale', () => {
@@ -68,38 +69,79 @@ describe('semantic', () => {
   });
 });
 
-describe('templateColors', () => {
-  it('should have minimal template colors', () => {
-    expect(templateColors.minimal.primary).toBe('#374151');
-    expect(templateColors.minimal.secondary).toBe('#F3F4F6');
+describe('catalogTemplates', () => {
+  it('should have minimal template', () => {
+    const template = getTemplate('minimal');
+    expect(template.id).toBe('minimal');
+    expect(template.name).toBe('Clean Minimal');
+    expect(template.colors.primary).toBe('#1A1A1A');
   });
 
-  it('should have bold template colors', () => {
-    expect(templateColors.bold.primary).toBe('#DC2626');
-    expect(templateColors.bold.secondary).toBe('#FEE2E2');
+  it('should have botanical template', () => {
+    const template = getTemplate('botanical');
+    expect(template.id).toBe('botanical');
+    expect(template.name).toBe('Botanical Bliss');
+    expect(template.category).toBe('warm');
   });
 
-  it('should have elegant template colors', () => {
-    expect(templateColors.elegant.primary).toBe('#7C3AED');
-    expect(templateColors.elegant.secondary).toBe('#EDE9FE');
+  it('should have midnight template', () => {
+    const template = getTemplate('midnight');
+    expect(template.id).toBe('midnight');
+    expect(template.name).toBe('Midnight Luxe');
+    expect(template.category).toBe('elegant');
   });
 
-  it('should have festive template colors', () => {
-    expect(templateColors.festive.primary).toBe('#D97706');
-    expect(templateColors.festive.secondary).toBe('#FEF3C7');
+  it('should have pastel template', () => {
+    const template = getTemplate('pastel');
+    expect(template.id).toBe('pastel');
+    expect(template.name).toBe('Soft Pastel');
+    expect(template.category).toBe('playful');
   });
 
-  it('should have modern template colors', () => {
-    expect(templateColors.modern.primary).toBe('#0891B2');
-    expect(templateColors.modern.secondary).toBe('#CFFAFE');
+  it('should have terracotta template', () => {
+    const template = getTemplate('terracotta');
+    expect(template.id).toBe('terracotta');
+    expect(template.name).toBe('Terracotta Warmth');
+    expect(template.category).toBe('warm');
   });
 
-  it('should have all required templates', () => {
-    expect(Object.keys(templateColors)).toContain('minimal');
-    expect(Object.keys(templateColors)).toContain('bold');
-    expect(Object.keys(templateColors)).toContain('elegant');
-    expect(Object.keys(templateColors)).toContain('festive');
-    expect(Object.keys(templateColors)).toContain('modern');
+  it('should have indigo template', () => {
+    const template = getTemplate('indigo');
+    expect(template.id).toBe('indigo');
+    expect(template.name).toBe('Royal Indigo');
+    expect(template.category).toBe('vibrant');
+  });
+
+  it('should have golden template', () => {
+    const template = getTemplate('golden');
+    expect(template.id).toBe('golden');
+    expect(template.name).toBe('Golden Hour');
+    expect(template.category).toBe('warm');
+  });
+
+  it('should have nordic template', () => {
+    const template = getTemplate('nordic');
+    expect(template.id).toBe('nordic');
+    expect(template.name).toBe('Nordic Winter');
+    expect(template.category).toBe('minimal');
+  });
+
+  it('should have all 8 templates', () => {
+    expect(catalogTemplates.length).toBe(8);
+    const ids = catalogTemplates.map(t => t.id);
+    expect(ids).toContain('minimal');
+    expect(ids).toContain('botanical');
+    expect(ids).toContain('midnight');
+    expect(ids).toContain('pastel');
+    expect(ids).toContain('terracotta');
+    expect(ids).toContain('indigo');
+    expect(ids).toContain('golden');
+    expect(ids).toContain('nordic');
+  });
+
+  it('should fallback to minimal for unknown template', () => {
+    const template = getTemplate('unknown');
+    expect(template.id).toBe('minimal');
   });
 });
 
@@ -135,9 +177,20 @@ describe('color values', () => {
   });
 
   it('all template colors should be valid hex colors', () => {
-    Object.values(templateColors).forEach(template => {
-      expect(isValidHexColor(template.primary)).toBe(true);
-      expect(isValidHexColor(template.secondary)).toBe(true);
+    catalogTemplates.forEach(template => {
+      expect(isValidHexColor(template.colors.primary)).toBe(true);
+      expect(isValidHexColor(template.colors.secondary)).toBe(true);
+      expect(isValidHexColor(template.colors.accent)).toBe(true);
+      expect(isValidHexColor(template.colors.background)).toBe(true);
+      expect(isValidHexColor(template.colors.cardBg)).toBe(true);
+      expect(isValidHexColor(template.colors.text)).toBe(true);
+      expect(isValidHexColor(template.colors.price)).toBe(true);
     });
+  });
+
+  it('getTemplateColors should return color object', () => {
+    const colors = getTemplateColors('botanical');
+    expect(colors.primary).toBe('#2D5A3D');
+    expect(colors.secondary).toBe('#E8F5E9');
   });
 });

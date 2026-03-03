@@ -28,7 +28,7 @@ export const seedDatabase = async (): Promise<void> => {
       mrp: 3999,
       description: 'Beautiful red silk saree with golden border',
       imageUri: 'https://placehold.co/400x400/DC2626/FFFFFF?text=Red+Saree',
-      tags: ['saree', 'silk', 'red', 'festive', 'premium'],
+      tags: ['saree', 'silk', 'red', 'premium'],
       category: 'Sarees',
       source: 'Gallery',
       stockStatus: 'in-stock',
@@ -52,7 +52,7 @@ export const seedDatabase = async (): Promise<void> => {
       mrp: 999,
       description: 'Elegant gold plated jhumka earrings',
       imageUri: 'https://placehold.co/400x400/F59E0B/FFFFFF?text=Earrings',
-      tags: ['jewelry', 'gold', 'earrings', 'festive'],
+      tags: ['jewelry', 'gold', 'earrings', 'wedding'],
       category: 'Jewelry',
       source: 'Gallery',
       stockStatus: 'limited',
@@ -64,7 +64,7 @@ export const seedDatabase = async (): Promise<void> => {
       mrp: 7999,
       description: 'Designer bridal lehenga with embroidery',
       imageUri: 'https://placehold.co/400x400/16A34A/FFFFFF?text=Lehenga',
-      tags: ['lehenga', 'bridal', 'green', 'premium', 'festive'],
+      tags: ['lehenga', 'bridal', 'green', 'premium'],
       category: 'Lehengas',
       source: 'Gallery',
       stockStatus: 'in-stock',
@@ -127,23 +127,23 @@ export const seedDatabase = async (): Promise<void> => {
     productIds.push(id);
   }
 
-  // Sample catalogs
+  // Sample catalogs with new beautiful templates
   const sampleCatalogs: CatalogInput[] = [
     {
-      name: 'Festive Collection',
-      template: 'festive',
+      name: 'Wedding Collection',
+      template: 'terracotta',
       productIds: productIds.filter((_, i) => [0, 2, 3].includes(i)),
-      primaryColor: '#D97706',
-      secondaryColor: '#FEF3C7',
+      primaryColor: '#C65D3B',
+      secondaryColor: '#FDF1E8',
       storeName: 'My Store',
       status: 'published',
     },
     {
-      name: 'Daily Wear',
-      template: 'minimal',
+      name: 'Daily Essentials',
+      template: 'botanical',
       productIds: productIds.filter((_, i) => [1, 4, 7].includes(i)),
-      primaryColor: '#374151',
-      secondaryColor: '#F3F4F6',
+      primaryColor: '#2D5A3D',
+      secondaryColor: '#E8F5E9',
       storeName: 'My Store',
       status: 'published',
     },
@@ -155,7 +155,7 @@ export const seedDatabase = async (): Promise<void> => {
 
   // Sample tag presets
   const tagPresets = [
-    {name: 'Festive Collection', tags: ['festive', 'premium', 'new-arrival']},
+    {name: 'Wedding Collection', tags: ['wedding', 'premium', 'new-arrival']},
     {name: 'Summer Special', tags: ['cotton', 'summer', 'light']},
     {name: 'Daily Wear', tags: ['daily-wear', 'comfortable', 'affordable']},
   ];

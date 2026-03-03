@@ -19,15 +19,18 @@ import {useCatalogStore} from '@/store';
 import {colors, semantic, spacing, textStyles, typography} from '@/theme';
 import {Header} from '@/components/Header';
 import {Catalog} from '@/types';
+import {catalogTemplates} from '@/theme/templates';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
-const templateLabels: Record<string, string> = {
-  minimal: 'Minimal',
-  bold: 'Bold',
-  elegant: 'Elegant',
-  festive: 'Festive',
-  modern: 'Modern',
+const getTemplateLabel = (templateId: string): string => {
+  const template = catalogTemplates.find(t => t.id === templateId);
+  return template?.name || 'Custom';
+};
+
+const getTemplateColor = (templateId: string): string => {
+  const template = catalogTemplates.find(t => t.id === templateId);
+  return template?.colors.primary || semantic.primary;
 };
 
 export const CatalogsScreen: React.FC = () => {
@@ -54,7 +57,7 @@ export const CatalogsScreen: React.FC = () => {
       <View
         style={[
           styles.catalogThumbnail,
-          {backgroundColor: item.primaryColor},
+          {backgroundColor: getTemplateColor(item.template)},
         ]}>
         <Text style={styles.catalogInitial}>
           {item.name.charAt(0).toUpperCase()}
@@ -65,7 +68,7 @@ export const CatalogsScreen: React.FC = () => {
           {item.name}
         </Text>
         <Text style={styles.catalogMeta}>
-          {templateLabels[item.template] || item.template} • {item.productIds.length}{' '}
+          {getTemplateLabel(item.template)} • {item.productIds.length}{' '}
           products
         </Text>
       </View>

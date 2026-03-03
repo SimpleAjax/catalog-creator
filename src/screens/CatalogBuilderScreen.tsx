@@ -9,28 +9,25 @@ import {
   ScrollView,
   Alert,
   SafeAreaView,
+  Dimensions,
 } from 'react-native';
 import {useNavigation, useRoute, RouteProp} from '@react-navigation/native';
 import {NativeStackNavigationProp} from '@react-navigation/native-stack';
-import {Check, ChevronRight} from 'lucide-react-native';
+import {Check} from 'lucide-react-native';
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
 
 import {RootStackParamList} from '@/navigation';
 import {useCatalogStore, useProductStore} from '@/store';
 import {colors, semantic, spacing, textStyles, typography} from '@/theme';
+import {catalogTemplates, getTemplate} from '@/theme/templates';
 import {Header} from '@/components/Header';
-import {Catalog, TemplateType} from '@/types';
+import {TemplateType} from '@/types';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 type RouteProps = RouteProp<RootStackParamList, 'CatalogBuilder'>;
 
-const templates: {id: TemplateType; name: string; color: string}[] = [
-  {id: 'minimal', name: 'Minimal', color: '#374151'},
-  {id: 'bold', name: 'Bold', color: '#DC2626'},
-  {id: 'elegant', name: 'Elegant', color: '#7C3AED'},
-  {id: 'festive', name: 'Festive', color: '#D97706'},
-  {id: 'modern', name: 'Modern', color: '#0891B2'},
-];
+const {width} = Dimensions.get('window');
+const TEMPLATE_CARD_WIDTH = 140;
 
 export const CatalogBuilderScreen: React.FC = () => {
   const navigation = useNavigation<NavigationProp>();
@@ -51,7 +48,7 @@ export const CatalogBuilderScreen: React.FC = () => {
       loadCatalog(catalogId);
     }
     // If template is provided from route params, use it
-    if (template && templates.some(t => t.id === template)) {
+    if (template && catalogTemplates.some(t => t.id === template)) {
       setSelectedTemplate(template as TemplateType);
     }
   }, [catalogId, template]);
@@ -77,13 +74,13 @@ export const CatalogBuilderScreen: React.FC = () => {
 
     setIsLoading(true);
     try {
-      const template = templates.find(t => t.id === selectedTemplate);
+      const templateConfig = getTemplate(selectedTemplate);
       const catalogData = {
         name: name.trim(),
         template: selectedTemplate,
         productIds: selectedProducts,
-        primaryColor: template?.color || '#374151',
-        secondaryColor: '#F3F4F6',
+        primaryColor: templateConfig.colors.primary,
+        secondaryColor: templateConfig.colors.secondary,
         storeName: '',
         status: 'draft' as const,
       };
@@ -107,6 +104,18 @@ export const CatalogBuilderScreen: React.FC = () => {
         ? prev.filter(id => id !== productId)
         : [...prev, productId],
     );
+  };
+
+  const getCategoryIcon = (category: string) => {
+    switch (category) {
+      case 'minimal': return '◐';
+      case 'elegant': return '◆';
+      case 'warm': return '●';
+      case 'playful': return '★';
+      case 'dark': return '◼';
+      case 'vibrant': return '◉';
+      default: return '◆';
+    }
   };
 
   return (
@@ -140,27 +149,82 @@ export const CatalogBuilderScreen: React.FC = () => {
 
         {/* Template Selection */}
         <View style={styles.section}>
-          <Text style={styles.label}>Choose Template</Text>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-            <View style={styles.templatesRow}>
-              {templates.map(template => (
-                <TouchableOpacity
-                  key={template.id}
-                  style={[
-                    styles.templateCard,
-                    {backgroundColor: template.color},
-                    selectedTemplate === template.id && styles.templateSelected,
-                  ]}
-                  onPress={() => setSelectedTemplate(template.id)}>
-                  <Text style={styles.templateName}>{template.name}</Text>
-                  {selectedTemplate === template.id && (
-                    <View style={styles.templateCheck}>
-                      <Check size={16} color={colors.white} strokeWidth={3} />
-                    </View>
-                  )}
-                </TouchableOpacity>
-              ))}
-            </View>
+          <Text style={styles.label}>Choose Template Style</Text>
+          <ScrollView 
+            horizontal 
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.templatesContainer}>
+            {catalogTemplates.map(template => (
+              <TouchableOpacity
+                key={template.id}
+                style={[
+                  styles.templateCard,
+                  {width: TEMPLATE_CARD_WIDTH},
+                  selectedTemplate === template.id && styles.templateSelected,
+                ]}
+                onPress={() => setSelectedTemplate(template.id as TemplateType)}>
+                {/* Template Preview */}
+                <View style={[
+                  styles.templatePreview,
+                  {
+                    backgroundColor: template.colors.background,
+                    borderRadius: template.style.borderRadius,
+                    borderColor: template.colors.border,
+                  },
+                ]}>
+                  {/* Header preview */}
+                  <View style={[
+                    styles.templateHeader,
+                    {
+                      backgroundColor: template.colors.primary,
+                      borderTopLeftRadius: template.style.borderRadius,
+                      borderTopRightRadius: template.style.borderRadius,
+                    },
+                  ]}>
+                    <Text style={styles.templateIcon}>{getCategoryIcon(template.category)}</Text>
+                  </View>
+                  {/* Card preview */}
+                  <View style={[
+                    styles.templateCardPreview,
+                    {
+                      backgroundColor: template.colors.cardBg,
+                      borderRadius: template.style.borderRadius - 4,
+                      borderColor: template.colors.border,
+                    },
+                  ]}>
+                    <View style={[
+                      styles.templateImagePreview,
+                      {backgroundColor: template.colors.secondary},
+                    ]} />
+                    <View style={[
+                      styles.templateTextPreview,
+                      {backgroundColor: template.colors.border},
+                    ]} />
+                    <View style={[
+                      styles.templatePricePreview,
+                      {backgroundColor: template.colors.primary},
+                    ]} />
+                  </View>
+                </View>
+
+                {/* Template Info */}
+                <View style={styles.templateInfo}>
+                  <Text style={[styles.templateName, {color: template.colors.text}]}>
+                    {template.name}
+                  </Text>
+                  <Text style={[styles.templateDesc, {color: template.colors.textMuted}]} numberOfLines={1}>
+                    {template.description}
+                  </Text>
+                </View>
+
+                {/* Selection Indicator */}
+                {selectedTemplate === template.id && (
+                  <View style={styles.selectionBadge}>
+                    <Check size={14} color={colors.white} strokeWidth={3} />
+                  </View>
+                )}
+              </TouchableOpacity>
+            ))}
           </ScrollView>
         </View>
 
@@ -237,28 +301,73 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: semantic.border,
   },
-  templatesRow: {
-    flexDirection: 'row',
+  templatesContainer: {
+    paddingRight: spacing.lg,
     gap: spacing.md,
   },
   templateCard: {
-    width: 120,
-    height: 160,
-    borderRadius: 16,
-    justifyContent: 'flex-end',
+    backgroundColor: semantic.card,
+    borderRadius: 20,
     padding: spacing.md,
-    borderWidth: 3,
+    borderWidth: 2,
     borderColor: 'transparent',
+    shadowColor: colors.black,
+    shadowOffset: {width: 0, height: 2},
+    shadowOpacity: 0.06,
+    shadowRadius: 8,
+    elevation: 2,
   },
   templateSelected: {
     borderColor: semantic.primary,
   },
-  templateName: {
-    fontSize: typography.body.fontSize,
-    fontWeight: '600',
+  templatePreview: {
+    height: 180,
+    borderWidth: 1,
+    overflow: 'hidden',
+  },
+  templateHeader: {
+    height: 50,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  templateIcon: {
+    fontSize: 24,
     color: colors.white,
   },
-  templateCheck: {
+  templateCardPreview: {
+    margin: 12,
+    padding: 8,
+    borderWidth: 1,
+    flex: 1,
+  },
+  templateImagePreview: {
+    height: 60,
+    borderRadius: 4,
+    marginBottom: 8,
+  },
+  templateTextPreview: {
+    height: 8,
+    borderRadius: 4,
+    width: '70%',
+    marginBottom: 6,
+  },
+  templatePricePreview: {
+    height: 8,
+    borderRadius: 4,
+    width: '40%',
+  },
+  templateInfo: {
+    marginTop: spacing.md,
+  },
+  templateName: {
+    fontSize: 15,
+    fontWeight: '600',
+  },
+  templateDesc: {
+    fontSize: 12,
+    marginTop: 2,
+  },
+  selectionBadge: {
     position: 'absolute',
     top: spacing.md,
     right: spacing.md,
@@ -268,6 +377,11 @@ const styles = StyleSheet.create({
     backgroundColor: semantic.primary,
     justifyContent: 'center',
     alignItems: 'center',
+    shadowColor: colors.black,
+    shadowOffset: {width: 0, height: 2},
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 3,
   },
   productsGrid: {
     flexDirection: 'row',
@@ -281,6 +395,7 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     borderWidth: 2,
     borderColor: 'transparent',
+    backgroundColor: semantic.card,
   },
   productSelected: {
     borderColor: semantic.primary,
@@ -296,7 +411,7 @@ const styles = StyleSheet.create({
     padding: 4,
     fontSize: 10,
     color: semantic.text,
-    backgroundColor: 'rgba(255,255,255,0.8)',
+    backgroundColor: 'rgba(255,255,255,0.9)',
   },
   productCheck: {
     position: 'absolute',

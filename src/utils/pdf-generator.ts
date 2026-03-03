@@ -1,8 +1,9 @@
 // PDF generation utilities for catalog export
 import * as Print from 'expo-print';
 import * as MediaLibrary from 'expo-media-library';
+import * as FileSystem from 'expo-file-system';
 import {Catalog, Product} from '@/types';
-import {templateColors} from '@/theme/colors';
+import {getTemplate} from '@/theme/templates';
 import {convertProductImagesToBase64} from './image-to-base64';
 
 export interface PDFOptions {
@@ -19,11 +20,18 @@ export interface PDFOptions {
  * @param options - PDF generation options
  * @returns URI of the generated PDF file
  */
+// Sanitize filename for filesystem
+const sanitizeFilename = (name: string): string => {
+  return name
+    .replace(/[^a-zA-Z0-9\u0900-\u097F\s-]/g, '') // Keep alphanumeric, Hindi chars, spaces, hyphens
+    .replace(/\s+/g, '_') // Replace spaces with underscores
+    .substring(0, 50); // Limit length
+};
+
 export const generateCatalogPDF = async (options: PDFOptions): Promise<string> => {
-  const {products} = options;
+  const {products, catalog} = options;
   
   console.log(`[PDF] Starting generation with ${products.length} products`);
-  console.log(`[PDF] Product names: ${products.map(p => p.name).join(', ')}`);
   
   // Convert ALL product images to base64 for embedding in PDF
   console.log(`[PDF] Converting ${products.length} product images to base64...`);
@@ -42,22 +50,50 @@ export const generateCatalogPDF = async (options: PDFOptions): Promise<string> =
 
   console.log(`[PDF] All ${updatedProducts.length} products converted, generating HTML...`);
 
-  // Generate HTML with ALL products
-  const html = generateCatalogHTMLSimple({
+  // Generate HTML with ALL products using template
+  const html = generateCatalogHTMLWithTemplate({
     ...options,
     products: updatedProducts,
   });
 
   console.log(`[PDF] HTML generated, length: ${html.length}`);
-  console.log(`[PDF] Product card count in HTML: ${(html.match(/class="product-card"/g) || []).length}`);
 
+  // Generate PDF with catalog name as filename
+  const safeName = sanitizeFilename(catalog.name);
+  const fileName = `${safeName}.pdf`;
+  
   const {uri} = await Print.printToFileAsync({
     html,
     base64: false,
+    // @ts-ignore - fileName is supported but not in types
+    fileName: safeName,
   });
 
   console.log(`[PDF] Generated at: ${uri}`);
-  return uri;
+  
+  // Try to rename the file to use catalog name if the above didn't work
+  try {
+    const cacheDir = FileSystem.cacheDirectory || `${FileSystem.documentDirectory}cache/`;
+    const newUri = `${cacheDir}${fileName}`;
+    
+    // Check if file already exists at newUri and delete it
+    const fileInfo = await FileSystem.getInfoAsync(newUri);
+    if (fileInfo.exists) {
+      await FileSystem.deleteAsync(newUri);
+    }
+    
+    // Copy file to new location with catalog name
+    await FileSystem.copyAsync({
+      from: uri,
+      to: newUri,
+    });
+    
+    console.log(`[PDF] Renamed to: ${newUri}`);
+    return newUri;
+  } catch (error) {
+    console.log('[PDF] Could not rename file, using original:', error);
+    return uri;
+  }
 };
 
 /**
@@ -84,16 +120,18 @@ export const exportAndSavePDF = async (options: PDFOptions): Promise<string> => 
 };
 
 /**
- * Generate simple HTML for catalog PDF
- * Uses flexbox layout for better pagination control
+ * Generate beautiful HTML for catalog PDF using template system
  * @param options - PDF generation options
  * @returns HTML string
  */
-const generateCatalogHTMLSimple = (options: PDFOptions): string => {
+const generateCatalogHTMLWithTemplate = (options: PDFOptions): string => {
   const {catalog, products, storeName, includePrices, includeStoreName = true} = options;
-
-  const productsPerRow = 2;
-  const productsPerPage = 6; // 3 rows x 2 columns
+  
+  // Get template configuration
+  const template = getTemplate(catalog.template || 'minimal');
+  const colors = template.colors;
+  
+  const productsPerPage = 4; // 2x2 grid - consistent across templates
   const totalPages = Math.ceil(products.length / productsPerPage);
 
   // Build all pages
@@ -102,19 +140,50 @@ const generateCatalogHTMLSimple = (options: PDFOptions): string => {
   for (let pageNum = 0; pageNum < totalPages; pageNum++) {
     const pageProducts = products.slice(pageNum * productsPerPage, (pageNum + 1) * productsPerPage);
     
-    // Build product grid for this page using flexbox
+    // Build product grid for this page
     let productGridHTML = '<div class="products-grid">';
     
     for (const product of pageProducts) {
+      const hasDiscount = product.mrp && product.mrp > (product.price || 0);
+      const discountPercent = hasDiscount && product.price 
+        ? Math.round(((product.mrp! - product.price) / product.mrp!) * 100)
+        : 0;
+      
       productGridHTML += `
-        <div class="product-card">
-          <div class="product-image-container">
+        <div class="product-card" style="
+          background: ${colors.cardBg};
+          border-radius: ${template.style.borderRadius}px;
+          border: ${template.layout.cardStyle === 'outlined' ? `1px solid ${colors.border}` : 'none'};
+        ">
+          <div class="product-image-container" style="
+            border-radius: ${template.style.imageStyle === 'rounded' 
+              ? `${template.style.borderRadius - 4}px ${template.style.borderRadius - 4}px 0 0` 
+              : '0'};
+          ">
             <img src="${product.imageUri}" class="product-image" onerror="this.style.display='none'" />
           </div>
-          <div class="product-info">
-            <p class="product-name">${escapeHtml(product.name)}</p>
-            ${includePrices && product.price ? `<p class="product-price">₹${product.price.toLocaleString('en-IN')}</p>` : ''}
-            ${product.mrp && product.mrp > (product.price || 0) && includePrices ? `<p class="product-mrp">MRP: ₹${product.mrp.toLocaleString('en-IN')}</p>` : ''}
+          <div class="product-info" style="
+            background: ${colors.cardBg};
+            border-radius: 0 0 ${template.style.borderRadius}px ${template.style.borderRadius}px;
+          ">
+            <p class="product-name" style="color: ${colors.text};">${escapeHtml(product.name)}</p>
+            ${includePrices ? `
+              <div class="price-container">
+                ${product.price ? `
+                  <p class="product-price" style="color: ${colors.price};">
+                    ₹${product.price.toLocaleString('en-IN')}
+                  </p>
+                ` : ''}
+                ${hasDiscount ? `
+                  <div class="discount-row">
+                    <p class="product-mrp" style="color: ${colors.textMuted};">₹${product.mrp!.toLocaleString('en-IN')}</p>
+                    <span class="discount-badge" style="background: ${colors.accent}30; color: ${colors.primary};">
+                      -${discountPercent}%
+                    </span>
+                  </div>
+                ` : ''}
+              </div>
+            ` : ''}
           </div>
         </div>
       `;
@@ -122,34 +191,72 @@ const generateCatalogHTMLSimple = (options: PDFOptions): string => {
     
     productGridHTML += '</div>';
     
-    // Page header
-    const headerHTML = pageNum === 0
-      ? `
-        <div class="header">
-          ${includeStoreName && storeName ? `<p class="store-name">${escapeHtml(storeName)}</p>` : ''}
-          <h1 class="catalog-title">${escapeHtml(catalog.name)}</h1>
-          <p class="catalog-meta">${products.length} Products${totalPages > 1 ? ` • Page ${pageNum + 1} of ${totalPages}` : ''}</p>
-        </div>
-      `
-      : `
-        <div class="header-simple">
-          <h1 class="catalog-title-simple">${escapeHtml(catalog.name)}</h1>
-          <p class="page-number">Page ${pageNum + 1} of ${totalPages}</p>
+    // Page header based on template header style
+    let headerHTML = '';
+    
+    if (pageNum === 0) {
+      // First page header - COMPACT version to fit all products
+      if (template.layout.headerStyle === 'gradient' && colors.gradient) {
+        headerHTML = `
+          <div class="header" style="
+            background: linear-gradient(135deg, ${colors.gradient[0]} 0%, ${colors.gradient[1]} 100%);
+            border-radius: 0 0 ${template.style.borderRadius + 4}px ${template.style.borderRadius + 4}px;
+            padding: 20px !important;
+          ">
+            ${includeStoreName && storeName ? `<p class="store-name" style="margin-bottom: 4px !important; font-size: 11px !important;">${escapeHtml(storeName)}</p>` : ''}
+            <h1 class="catalog-title" style="font-size: 24px !important;">${escapeHtml(catalog.name)}</h1>
+            <p class="catalog-meta" style="margin-top: 4px !important; font-size: 12px !important;">${products.length} Products${totalPages > 1 ? ` • Page ${pageNum + 1} of ${totalPages}` : ''}</p>
+          </div>
+        `;
+      } else if (template.layout.headerStyle === 'minimal') {
+        headerHTML = `
+          <div class="header-minimal" style="border-bottom: 2px solid ${colors.border}; padding: 16px 0 !important;">
+            ${includeStoreName && storeName ? `<p class="store-name-minimal" style="color: ${colors.textMuted}; margin-bottom: 4px !important; font-size: 11px !important;">${escapeHtml(storeName)}</p>` : ''}
+            <h1 class="catalog-title-minimal" style="color: ${colors.text}; font-size: 24px !important;">${escapeHtml(catalog.name)}</h1>
+            <p class="catalog-meta-minimal" style="color: ${colors.textMuted}; margin-top: 4px !important; font-size: 12px !important;">${products.length} Products</p>
+          </div>
+        `;
+      } else {
+        headerHTML = `
+          <div class="header" style="
+            background: ${colors.primary};
+            border-radius: 0 0 ${template.style.borderRadius + 4}px ${template.style.borderRadius + 4}px;
+            padding: 20px !important;
+          ">
+            ${includeStoreName && storeName ? `<p class="store-name" style="margin-bottom: 4px !important; font-size: 11px !important;">${escapeHtml(storeName)}</p>` : ''}
+            <h1 class="catalog-title" style="font-size: 24px !important;">${escapeHtml(catalog.name)}</h1>
+            <p class="catalog-meta" style="margin-top: 4px !important; font-size: 12px !important;">${products.length} Products${totalPages > 1 ? ` • Page ${pageNum + 1} of ${totalPages}` : ''}</p>
+          </div>
+        `;
+      }
+    } else {
+      // Simple header for subsequent pages
+      headerHTML = `
+        <div class="header-simple" style="
+          background: ${colors.secondary};
+          border-radius: ${template.style.borderRadius}px;
+        ">
+          <h1 class="catalog-title-simple" style="color: ${colors.text};">${escapeHtml(catalog.name)}</h1>
+          <p class="page-number" style="color: ${colors.textMuted};">Page ${pageNum + 1} of ${totalPages}</p>
         </div>
       `;
+    }
     
     pagesHTML += `
-      <div class="page">
+      <div class="page" style="background: ${colors.background};">
         ${headerHTML}
         ${productGridHTML}
         ${pageNum === totalPages - 1 ? `
-          <div class="footer">
-            <p class="footer-text">Created with Catalog Creator</p>
+          <div class="footer" style="border-top: 1px solid ${colors.border};">
+            <p class="footer-text" style="color: ${colors.textMuted};">Created with Catalog Creator</p>
           </div>
         ` : ''}
       </div>
     `;
   }
+
+  // Generate template-specific CSS
+  const templateCSS = generateTemplateCSS(template);
 
   return `
     <!DOCTYPE html>
@@ -160,7 +267,7 @@ const generateCatalogHTMLSimple = (options: PDFOptions): string => {
       <style>
         @page {
           size: A4;
-          margin: 15px;
+          margin: 0;
         }
         
         * {
@@ -171,96 +278,47 @@ const generateCatalogHTMLSimple = (options: PDFOptions): string => {
         
         body {
           font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-          background-color: #ffffff;
-          color: #333;
+          background-color: ${colors.background};
+          color: ${colors.text};
         }
         
         .page {
           page-break-after: always;
-          min-height: 100vh;
-          padding: 20px;
+          height: 297mm; /* A4 height */
+          width: 210mm; /* A4 width */
+          padding: 15mm;
           position: relative;
+          overflow: hidden;
+          box-sizing: border-box;
         }
         
         .page:last-child {
           page-break-after: auto;
         }
         
-        .header {
-          background: linear-gradient(135deg, ${catalog.primaryColor} 0%, ${catalog.secondaryColor} 100%);
-          padding: 30px 20px;
-          text-align: center;
-          border-radius: 0 0 20px 20px;
-          margin-bottom: 20px;
-        }
-        
-        .header-simple {
-          background: ${catalog.primaryColor};
-          padding: 15px 20px;
-          text-align: center;
-          border-radius: 12px;
-          margin-bottom: 20px;
-        }
-        
-        .store-name {
-          font-size: 14px;
-          font-weight: 500;
-          color: rgba(255, 255, 255, 0.9);
-          margin-bottom: 6px;
-          text-transform: uppercase;
-          letter-spacing: 1px;
-        }
-        
-        .catalog-title {
-          font-size: 28px;
-          font-weight: 700;
-          color: #ffffff;
-          margin: 0;
-        }
-        
-        .catalog-title-simple {
-          font-size: 20px;
-          font-weight: 700;
-          color: #ffffff;
-          margin: 0;
-        }
-        
-        .catalog-meta {
-          font-size: 13px;
-          color: rgba(255, 255, 255, 0.8);
-          margin-top: 6px;
-        }
-        
-        .page-number {
-          font-size: 11px;
-          color: rgba(255, 255, 255, 0.7);
-          margin-top: 4px;
-        }
+        ${templateCSS}
         
         .products-grid {
-          display: flex;
-          flex-wrap: wrap;
-          justify-content: space-between;
+          display: grid;
+          grid-template-columns: 1fr 1fr;
           gap: 15px;
+          height: calc(297mm - 30mm - 80mm); /* Page height - padding - header space */
         }
         
         .product-card {
-          width: calc(50% - 8px);
-          background: #ffffff;
-          border-radius: 12px;
           overflow: hidden;
-          box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
-          border: 1px solid #e5e7eb;
+          box-shadow: 0 4px 16px ${colors.primary}15;
           page-break-inside: avoid;
           break-inside: avoid;
-          margin-bottom: 15px;
+          display: flex;
+          flex-direction: column;
+          height: 100%;
         }
         
         .product-image-container {
-          width: 100%;
-          height: 200px;
+          height: calc(100% - 80px); /* Card height minus info section */
           overflow: hidden;
-          background-color: #f3f4f6;
+          background-color: ${colors.secondary};
         }
         
         .product-image {
@@ -270,47 +328,60 @@ const generateCatalogHTMLSimple = (options: PDFOptions): string => {
         }
         
         .product-info {
-          padding: 12px;
+          padding: 16px;
+          flex-shrink: 0;
         }
         
         .product-name {
-          font-size: 14px;
+          font-size: 15px;
           font-weight: 600;
-          color: #1f2937;
-          margin-bottom: 6px;
+          margin-bottom: 8px;
           line-height: 1.3;
           white-space: nowrap;
           overflow: hidden;
           text-overflow: ellipsis;
         }
         
+        .price-container {
+          display: flex;
+          flex-direction: column;
+          gap: 4px;
+        }
+        
         .product-price {
-          font-size: 18px;
+          font-size: 20px;
           font-weight: 700;
-          color: ${catalog.primaryColor};
+        }
+        
+        .discount-row {
+          display: flex;
+          align-items: center;
+          gap: 8px;
         }
         
         .product-mrp {
-          font-size: 12px;
-          color: #9ca3af;
+          font-size: 13px;
           text-decoration: line-through;
-          margin-top: 2px;
+        }
+        
+        .discount-badge {
+          font-size: 11px;
+          font-weight: 600;
+          padding: 2px 8px;
+          border-radius: 12px;
         }
         
         .footer {
           text-align: center;
-          padding: 20px;
-          margin-top: 20px;
-          border-top: 1px solid #e5e7eb;
+          padding: 10px 24px;
           position: absolute;
-          bottom: 0;
-          left: 20px;
-          right: 20px;
+          bottom: 15mm;
+          left: 15mm;
+          right: 15mm;
         }
         
         .footer-text {
           font-size: 11px;
-          color: #9ca3af;
         }
       </style>
     </head>
@@ -319,6 +390,100 @@ const generateCatalogHTMLSimple = (options: PDFOptions): string => {
     </body>
     </html>
   `;
+};
+
+/**
+ * Generate template-specific CSS based on template configuration
+ */
+const generateTemplateCSS = (template: ReturnType<typeof getTemplate>): string => {
+  const colors = template.colors;
+  
+  // Header styles
+  const headerStyles = `
+    .header {
+      padding: 16px 20px;
+      text-align: center;
+      margin: -15mm -15mm 15px -15mm;
+      height: 70mm;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+    }
+    
+    .header-minimal {
+      padding: 12px 0;
+      text-align: left;
+      margin-bottom: 15px;
+      height: 50mm;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+    }
+    
+    .header-simple {
+      padding: 12px 20px;
+      text-align: center;
+      margin: -15mm -15mm 15px -15mm;
+      height: 50mm;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+    }
+    
+    .store-name {
+      font-size: 13px;
+      font-weight: 500;
+      color: rgba(255, 255, 255, 0.85);
+      margin-bottom: 8px;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+    }
+    
+    .store-name-minimal {
+      font-size: 12px;
+      font-weight: 500;
+      margin-bottom: 8px;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+    }
+    
+    .catalog-title {
+      font-size: 32px;
+      font-weight: 700;
+      color: #ffffff;
+      margin: 0;
+    }
+    
+    .catalog-title-minimal {
+      font-size: 28px;
+      font-weight: 700;
+      margin: 0 0 4px 0;
+    }
+    
+    .catalog-title-simple {
+      font-size: 20px;
+      font-weight: 600;
+      margin: 0;
+    }
+    
+    .catalog-meta {
+      font-size: 14px;
+      color: rgba(255, 255, 255, 0.75);
+      margin-top: 8px;
+    }
+    
+    .catalog-meta-minimal {
+      font-size: 13px;
+      margin-top: 4px;
+    }
+    
+    .page-number {
+      font-size: 12px;
+      margin-top: 4px;
+    }
+  `;
+  
+  return headerStyles;
 };
 
 /**
@@ -344,7 +509,7 @@ const escapeHtml = (text: string): string => {
  */
 export const generateMultiPagePDFs = async (
   options: PDFOptions,
-  productsPerPage: number = 6,
+  productsPerPage: number = 4,
 ): Promise<string[]> => {
   const {products} = options;
   const pages: string[] = [];
@@ -365,7 +530,7 @@ export const generateMultiPagePDFs = async (
       };
     });
 
-    const html = generateCatalogHTMLSimple({
+    const html = generateCatalogHTMLWithTemplate({
       ...options,
       products: updatedProducts,
     });

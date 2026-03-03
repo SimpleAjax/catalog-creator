@@ -1,4 +1,4 @@
-// Templates Screen
+// Templates Screen - Beautiful Template Gallery
 import React, {useEffect} from 'react';
 import {
   View,
@@ -8,19 +8,25 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   SafeAreaView,
+  ScrollView,
+  Dimensions,
 } from 'react-native';
 import {useNavigation} from '@react-navigation/native';
 import {NativeStackNavigationProp} from '@react-navigation/native-stack';
-import {Plus, MoreVertical, Tag} from 'lucide-react-native';
+import {Plus, MoreVertical, Tag, Sparkles, Palette} from 'lucide-react-native';
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
 
 import {RootStackParamList} from '@/navigation';
 import {useTagPresetStore} from '@/store';
 import {colors, semantic, spacing, textStyles, typography} from '@/theme';
+import {catalogTemplates, TemplateConfig} from '@/theme/templates';
 import {Header} from '@/components/Header';
 import {TagPreset} from '@/types';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
+
+const {width} = Dimensions.get('window');
+const TEMPLATE_CARD_WIDTH = (width - 60) / 2;
 
 export const TemplatesScreen: React.FC = () => {
   const navigation = useNavigation<NavigationProp>();
@@ -38,6 +44,102 @@ export const TemplatesScreen: React.FC = () => {
   const handleTemplatePress = (templateId: string) => {
     navigation.navigate('CatalogBuilder', {template: templateId});
   };
+
+  const getCategoryIcon = (category: TemplateConfig['category']) => {
+    switch (category) {
+      case 'minimal':
+        return '◐';
+      case 'elegant':
+        return '◆';
+      case 'warm':
+        return '●';
+      case 'playful':
+        return '★';
+      case 'dark':
+        return '◼';
+      case 'vibrant':
+        return '◉';
+      default:
+        return '◆';
+    }
+  };
+
+  const renderTemplateCard = ({item}: {item: TemplateConfig}) => (
+    <TouchableOpacity
+      style={[
+        styles.templateCard,
+        {
+          backgroundColor: item.colors.cardBg,
+          borderRadius: item.style.borderRadius + 4,
+          shadowOpacity: item.style.shadowOpacity,
+        },
+      ]}
+      onPress={() => handleTemplatePress(item.id)}>
+      {/* Header Preview */}
+      <View
+        style={[
+          styles.templateHeader,
+          {
+            backgroundColor: item.colors.primary,
+            borderTopLeftRadius: item.style.borderRadius,
+            borderTopRightRadius: item.style.borderRadius,
+          },
+        ]}>
+        <Text style={styles.templateIcon}>{getCategoryIcon(item.category)}</Text>
+      </View>
+
+      {/* Preview Content */}
+      <View style={styles.templatePreview}>
+        {/* Product Card Preview */}
+        <View
+          style={[
+            styles.productPreview,
+            {
+              backgroundColor: item.colors.cardBg,
+              borderRadius: item.style.borderRadius,
+              borderColor: item.colors.border,
+              borderWidth: 1,
+            },
+          ]}>
+          <View
+            style={[
+              styles.imagePreview,
+              {
+                backgroundColor: item.colors.secondary,
+                borderRadius: item.style.borderRadius - 4,
+              },
+            ]}
+          />
+          <View style={styles.textPreview}>
+            <View
+              style={[
+                styles.textLine,
+                {backgroundColor: item.colors.border, width: '70%'},
+              ]}
+            />
+            <View
+              style={[
+                styles.textLine,
+                {backgroundColor: item.colors.primary, width: '40%', marginTop: 6},
+              ]}
+            />
+          </View>
+        </View>
+      </View>
+
+      {/* Template Info */}
+      <View style={styles.templateInfo}>
+        <Text style={[styles.templateName, {color: item.colors.text}]}>
+          {item.name}
+        </Text>
+        <Text
+          style={[styles.templateDescription, {color: item.colors.textMuted}]}
+          numberOfLines={1}>
+          {item.description}
+        </Text>
+      </View>
+    </TouchableOpacity>
+  );
 
   const renderTagPreset = ({item}: {item: TagPreset}) => (
     <View style={styles.presetCard}>
@@ -63,34 +165,39 @@ export const TemplatesScreen: React.FC = () => {
     </View>
   );
 
-  const templates = [
-    {id: 'minimal', name: 'Minimal', color: '#374151'},
-    {id: 'bold', name: 'Bold', color: '#DC2626'},
-    {id: 'elegant', name: 'Elegant', color: '#7C3AED'},
-    {id: 'festive', name: 'Festive', color: '#D97706'},
-    {id: 'modern', name: 'Modern', color: '#0891B2'},
-  ];
-
   return (
     <SafeAreaView style={styles.container}>
       <Header title="Templates" showBack={false} />
 
-      <View style={[styles.content, {paddingBottom: insets.bottom + 100}]}>
-        {/* Catalog Templates Section */}
-        <Text style={textStyles.sectionHeader}>Catalog Templates</Text>
+      <ScrollView
+        style={styles.scrollView}
+        contentContainerStyle={{paddingBottom: insets.bottom + 100}}
+        showsVerticalScrollIndicator={false}>
+        {/* Header Section */}
+        <View style={styles.headerSection}>
+          <View style={styles.headerIcon}>
+            <Palette size={24} color={colors.white} />
+          </View>
+          <View style={styles.headerText}>
+            <Text style={styles.headerTitle}>Choose Your Style</Text>
+            <Text style={styles.headerSubtitle}>
+              {catalogTemplates.length} beautiful templates to showcase your products
+            </Text>
+          </View>
+        </View>
+
+        {/* Catalog Templates Grid */}
+        <Text style={[textStyles.sectionHeader, styles.sectionTitle]}>
+          <Sparkles size={16} color={semantic.primary} /> Catalog Templates
+        </Text>
+
         <FlatList
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          data={templates}
+          data={catalogTemplates}
           keyExtractor={item => item.id}
-          contentContainerStyle={styles.templatesList}
-          renderItem={({item}) => (
-            <TouchableOpacity
-              style={[styles.templateCard, {backgroundColor: item.color}]}
-              onPress={() => handleTemplatePress(item.id)}>
-              <Text style={styles.templateName}>{item.name}</Text>
-            </TouchableOpacity>
-          )}
+          numColumns={2}
+          scrollEnabled={false}
+          columnWrapperStyle={styles.templatesRow}
+          renderItem={renderTemplateCard}
         />
 
         {/* Tag Presets Section */}
@@ -107,7 +214,7 @@ export const TemplatesScreen: React.FC = () => {
           <FlatList
             data={presets}
             keyExtractor={item => item.id}
-            showsVerticalScrollIndicator={false}
+            scrollEnabled={false}
             ListEmptyComponent={
               <View style={styles.emptyState}>
                 <Text style={styles.emptyText}>No tag presets yet</Text>
@@ -122,7 +229,7 @@ export const TemplatesScreen: React.FC = () => {
             renderItem={renderTagPreset}
           />
         )}
-      </View>
+      </ScrollView>
     </SafeAreaView>
   );
 };
@@ -132,31 +239,108 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: semantic.background,
   },
-  content: {
+  scrollView: {
     flex: 1,
     paddingHorizontal: 20,
     paddingTop: spacing.lg,
   },
-  templatesList: {
-    gap: spacing.md,
+  headerSection: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: semantic.card,
+    padding: spacing.lg,
+    borderRadius: 20,
     marginBottom: spacing.xxl,
+    shadowColor: colors.black,
+    shadowOffset: {width: 0, height: 2},
+    shadowOpacity: 0.06,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  headerIcon: {
+    width: 48,
+    height: 48,
+    borderRadius: 14,
+    backgroundColor: semantic.primary,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  headerText: {
+    marginLeft: spacing.md,
+    flex: 1,
+  },
+  headerTitle: {
+    fontSize: typography.h3.fontSize,
+    fontWeight: '700',
+    color: semantic.text,
+  },
+  headerSubtitle: {
+    fontSize: typography.bodySmall.fontSize,
+    color: semantic.textSecondary,
+    marginTop: 2,
+  },
+  sectionTitle: {
+    marginBottom: spacing.md,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+  },
+  templatesRow: {
+    justifyContent: 'space-between',
+    marginBottom: spacing.md,
   },
   templateCard: {
-    width: 120,
-    height: 160,
-    borderRadius: 16,
-    justifyContent: 'flex-end',
-    padding: spacing.md,
+    width: TEMPLATE_CARD_WIDTH,
+    overflow: 'hidden',
+    shadowColor: colors.black,
+    shadowOffset: {width: 0, height: 2},
+    shadowRadius: 8,
+    elevation: 3,
+  },
+  templateHeader: {
+    height: 50,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  templateIcon: {
+    fontSize: 20,
+    color: colors.white,
+    opacity: 0.9,
+  },
+  templatePreview: {
+    padding: 12,
+    backgroundColor: semantic.background,
+  },
+  productPreview: {
+    padding: 8,
+  },
+  imagePreview: {
+    height: 60,
+    width: '100%',
+  },
+  textPreview: {
+    marginTop: 8,
+  },
+  textLine: {
+    height: 6,
+    borderRadius: 3,
+  },
+  templateInfo: {
+    padding: 12,
   },
   templateName: {
-    fontSize: typography.body.fontSize,
+    fontSize: 14,
     fontWeight: '600',
-    color: colors.white,
+  },
+  templateDescription: {
+    fontSize: 11,
+    marginTop: 2,
   },
   presetsHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+    marginTop: spacing.xxl,
     marginBottom: spacing.md,
   },
   presetCard: {
@@ -166,6 +350,11 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     padding: spacing.md,
     marginBottom: spacing.md,
+    shadowColor: colors.black,
+    shadowOffset: {width: 0, height: 1},
+    shadowOpacity: 0.04,
+    shadowRadius: 4,
+    elevation: 1,
   },
   presetIcon: {
     width: 44,

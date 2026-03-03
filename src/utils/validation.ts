@@ -78,7 +78,7 @@ export const validateCatalogInput = (input: Partial<CatalogInput>): ValidationRe
   }
 
   // Template validation
-  const validTemplates = ['minimal', 'bold', 'elegant', 'festive', 'modern'];
+  const validTemplates = ['minimal', 'botanical', 'midnight', 'pastel', 'terracotta', 'indigo', 'golden', 'nordic'];
   if (!input.template || !validTemplates.includes(input.template)) {
     errors.template = 'Please select a valid template';
   }

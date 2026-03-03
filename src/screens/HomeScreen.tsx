@@ -45,7 +45,7 @@ export const HomeScreen: React.FC = () => {
   };
 
   const handleSeeAllProducts = () => {
-    navigation.navigate('MainTabs');
+    navigation.navigate('MainTabs', {screen: 'Products'});
   };
 
   const handleSeeAllCatalogs = () => {

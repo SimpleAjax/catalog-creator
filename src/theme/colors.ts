@@ -87,11 +87,5 @@ export const semantic = {
   divider: colors.gray[100],
 };
 
-// Template color presets
-export const templateColors = {
-  minimal: { primary: '#374151', secondary: '#F3F4F6' },
-  bold: { primary: '#DC2626', secondary: '#FEE2E2' },
-  elegant: { primary: '#7C3AED', secondary: '#EDE9FE' },
-  festive: { primary: '#D97706', secondary: '#FEF3C7' },
-  modern: { primary: '#0891B2', secondary: '#CFFAFE' },
-};
+// Template exports moved to templates.ts
+// Import from '@/theme/templates' for full template configuration
